@@ -6,6 +6,9 @@ const fs = require('fs');
 const path = require('path');
 const NodeCache = require('node-cache');
 
+process.on('uncaughtException', console.error);
+process.on('unhandledRejection', console.error);
+
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -40,7 +43,7 @@ app.post('/api/request-pairing', async (req, res) => {
         const conn = makeWASocket({
             logger: pino({ level: 'silent' }),
             printQRInTerminal: false,
-            browser: Browsers.ubuntu('Chrome'),
+            browser: ["Ubuntu", "Chrome", "20.0.0"],
             auth: state,
             markOnlineOnConnect: false
         });
@@ -164,7 +167,7 @@ app.get('/pair', async (req, res) => {
         const conn = makeWASocket({
             logger: pino({ level: 'silent' }),
             printQRInTerminal: false,
-            browser: Browsers.ubuntu('Chrome'),
+            browser: ["Ubuntu", "Chrome", "20.0.0"],
             auth: state,
             markOnlineOnConnect: false
         });
