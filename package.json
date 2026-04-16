@@ -1,0 +1,19 @@
+{
+    "name": "xenoxd-session-generator",
+    "version": "1.0.0",
+    "description": "Next-Gen Baileys Session Generator for XENO XD",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js"
+    },
+    "dependencies": {
+        "@whiskeysockets/baileys": "^6.7.9",
+        "express": "^4.19.2",
+        "cors": "^2.8.5",
+        "node-cache": "^5.1.2",
+        "pino": "^9.0.0"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    }
+}
