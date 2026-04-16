@@ -110,7 +110,18 @@ app.post('/api/request-pairing', async (req, res) => {
         setTimeout(async () => {
             if (!conn.authState.creds.registered) {
                 try {
-                    let code = await conn.requestPairingCode(phoneNumber);
+                    let code;
+                    let retries = 3;
+                    for (let i = 0; i < retries; i++) {
+                        try {
+                            code = await conn.requestPairingCode(phoneNumber);
+                            break; // Successfully got code
+                        } catch (err) {
+                            if (i === retries - 1) throw err; // Throw on final retry
+                            await new Promise(res => setTimeout(res, 3000)); // Retry after 3 seconds
+                        }
+                    }
+                    
                     code = code?.match(/.{1,4}/g)?.join('-');
                     sessionStatusCache.set(sessionId, { status: 'pairing', code: code });
                     
@@ -124,7 +135,7 @@ app.post('/api/request-pairing', async (req, res) => {
             } else {
                 res.status(400).json({ error: "Already registered." });
             }
-        }, 6000);
+        }, 5000);
 
     } catch (error) {
         console.error('Server error:', error);
@@ -227,7 +238,18 @@ app.get('/pair', async (req, res) => {
         setTimeout(async () => {
             if (!conn.authState.creds.registered) {
                 try {
-                    let code = await conn.requestPairingCode(phoneNumber);
+                    let code;
+                    let retries = 3;
+                    for (let i = 0; i < retries; i++) {
+                        try {
+                            code = await conn.requestPairingCode(phoneNumber);
+                            break;
+                        } catch (err) {
+                            if (i === retries - 1) throw err;
+                            await new Promise(resolve => setTimeout(resolve, 3000));
+                        }
+                    }
+
                     code = code?.match(/.{1,4}/g)?.join('-');
                     res.json({ code: code, session: sessionId });
                 } catch (error) {
@@ -238,7 +260,7 @@ app.get('/pair', async (req, res) => {
             } else {
                 res.status(400).json({ error: "Already registered." });
             }
-        }, 6000);
+        }, 5000);
 
     } catch (error) {
         res.status(500).json({ error: "Internal server error." });
