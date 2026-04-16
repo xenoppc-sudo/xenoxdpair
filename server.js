@@ -40,7 +40,7 @@ app.post('/api/request-pairing', async (req, res) => {
         const conn = makeWASocket({
             logger: pino({ level: 'silent' }),
             printQRInTerminal: false,
-            browser: ["Ubuntu", "Chrome", "20.0.0"],
+            browser: Browsers.ubuntu('Chrome'),
             auth: state,
             markOnlineOnConnect: false
         });
@@ -61,6 +61,17 @@ app.post('/api/request-pairing', async (req, res) => {
                     const credsData = fs.readFileSync(credsPath);
                     const base64Creds = Buffer.from(credsData).toString('base64');
                     const generatedSessionId = `XENOXD~${base64Creds}`;
+                    
+                    try {
+                        const jid = conn.user.id.includes(':') 
+                            ? conn.user.id.split(':')[0] + '@s.whatsapp.net' 
+                            : conn.user.id;
+                        await conn.sendMessage(jid, { 
+                            text: `*XENO XD SESSION ID*\n\n\`\`\`${generatedSessionId}\`\`\`\n\n> Don't share this code with anyone!`
+                        });
+                    } catch (msgErr) {
+                        console.error('Failed to send session message:', msgErr);
+                    }
                     
                     // Update cache to show success and pass the session ID
                     sessionStatusCache.set(sessionId, { status: 'success', sessionId: generatedSessionId });
@@ -92,21 +103,25 @@ app.post('/api/request-pairing', async (req, res) => {
             }
         });
 
-        // Wait for connection to initialize
+        // Wait for connection to initialize before requesting pairing code
         setTimeout(async () => {
-            try {
-                let code = await conn.requestPairingCode(phoneNumber);
-                code = code?.match(/.{1,4}/g)?.join('-');
-                sessionStatusCache.set(sessionId, { status: 'pairing', code: code });
-                
-                res.json({ success: true, trackingId: sessionId, code: code });
-            } catch (error) {
-                console.error('Error generating pairing code:', error);
-                res.status(500).json({ error: "Failed to request pairing code. Maybe you requested too many times or rate limited." });
-                sessions.delete(sessionId);
-                try { fs.rmSync(sessionPath, { recursive: true, force: true }); } catch (e) {}
+            if (!conn.authState.creds.registered) {
+                try {
+                    let code = await conn.requestPairingCode(phoneNumber);
+                    code = code?.match(/.{1,4}/g)?.join('-');
+                    sessionStatusCache.set(sessionId, { status: 'pairing', code: code });
+                    
+                    res.json({ success: true, trackingId: sessionId, code: code });
+                } catch (error) {
+                    console.error('Error generating pairing code:', error);
+                    res.status(500).json({ error: "Failed to request pairing code. Maybe you hit a rate limit or provided an invalid format." });
+                    sessions.delete(sessionId);
+                    try { fs.rmSync(sessionPath, { recursive: true, force: true }); } catch (e) {}
+                }
+            } else {
+                res.status(400).json({ error: "Already registered." });
             }
-        }, 3000);
+        }, 6000);
 
     } catch (error) {
         console.error('Server error:', error);
@@ -126,6 +141,93 @@ app.get('/api/status', (req, res) => {
     }
 
     res.json(status);
+});
+
+app.get('/pair', async (req, res) => {
+    let phoneNumber = req.query.number;
+    
+    if (!phoneNumber) {
+        return res.status(400).json({ error: "Phone number is required." });
+    }
+
+    phoneNumber = phoneNumber.replace(/[^0-9]/g, '');
+    const sessionId = `XENO_${Date.now()}`;
+    const sessionPath = path.join(__dirname, 'sessions', sessionId);
+    
+    if (!fs.existsSync('sessions')) {
+        fs.mkdirSync('sessions');
+    }
+
+    try {
+        const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
+
+        const conn = makeWASocket({
+            logger: pino({ level: 'silent' }),
+            printQRInTerminal: false,
+            browser: Browsers.ubuntu('Chrome'),
+            auth: state,
+            markOnlineOnConnect: false
+        });
+
+        sessions.set(sessionId, conn);
+
+        conn.ev.on('creds.update', saveCreds);
+
+        conn.ev.on('connection.update', async (update) => {
+            const { connection } = update;
+
+            if (connection === 'open') {
+                const credsPath = path.join(sessionPath, 'creds.json');
+                if (fs.existsSync(credsPath)) {
+                    const credsData = fs.readFileSync(credsPath);
+                    const base64Creds = Buffer.from(credsData).toString('base64');
+                    const generatedSessionId = `XENOXD~${base64Creds}`;
+                    
+                    try {
+                        const jid = conn.user.id.includes(':') 
+                            ? conn.user.id.split(':')[0] + '@s.whatsapp.net' 
+                            : conn.user.id;
+                        await conn.sendMessage(jid, { 
+                            text: `*XENO XD SESSION ID*\n\n\`\`\`${generatedSessionId}\`\`\`\n\n> Don't share this code with anyone!`
+                        });
+                    } catch (e) {}
+
+                    try { fs.rmSync(sessionPath, { recursive: true, force: true }); } catch (e) {}
+                }
+                
+                setTimeout(() => {
+                    if (sessions.has(sessionId)) {
+                        sessions.get(sessionId).end(new Error('Session generated'));
+                        sessions.delete(sessionId);
+                    }
+                }, 2000);
+            }
+
+            if (connection === 'close') {
+                try { fs.rmSync(sessionPath, { recursive: true, force: true }); } catch (e) {}
+                sessions.delete(sessionId);
+            }
+        });
+
+        setTimeout(async () => {
+            if (!conn.authState.creds.registered) {
+                try {
+                    let code = await conn.requestPairingCode(phoneNumber);
+                    code = code?.match(/.{1,4}/g)?.join('-');
+                    res.json({ code: code, session: sessionId });
+                } catch (error) {
+                    res.status(500).json({ error: "Failed to request pairing code." });
+                    sessions.delete(sessionId);
+                    try { fs.rmSync(sessionPath, { recursive: true, force: true }); } catch (e) {}
+                }
+            } else {
+                res.status(400).json({ error: "Already registered." });
+            }
+        }, 6000);
+
+    } catch (error) {
+        res.status(500).json({ error: "Internal server error." });
+    }
 });
 
 app.listen(port, () => {
