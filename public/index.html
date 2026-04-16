@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XENO XD | Session Generator</title>
+    <meta name="description" content="Official Session Generator for XENO XD Bot. Secure, scalable, and beautifully designed.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="background-animation">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <div class="container glass-panel">
+        <header>
+            <h1 class="glitch" data-text="XENO XD">XENO XD</h1>
+            <p class="subtitle">Next-Gen Bot Session Generator</p>
+        </header>
+
+        <main id="generator-section">
+            <div class="input-group">
+                <label for="phoneNumber">WhatsApp Number</label>
+                <div class="input-wrapper">
+                    <span class="icon">📱</span>
+                    <input type="text" id="phoneNumber" placeholder="e.g. 919876543210" autocomplete="off">
+                </div>
+                <small>Include country code without '+' or '00'</small>
+            </div>
+
+            <button id="generateBtn" class="btn-primary">
+                <span class="btn-text">Generate Pairing Code</span>
+                <div class="spinner hidden"></div>
+            </button>
+
+            <!-- Pairing Code Display Area -->
+            <div id="pairingCodeArea" class="hidden">
+                <p>Your Pairing Code is Ready:</p>
+                <div class="code-box">
+                    <h2 id="pairingCodeDisplay">---- ----</h2>
+                    <button id="copyCodeBtn" class="btn-icon" title="Copy Code">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                    </button>
+                </div>
+                <p class="instructions">
+                    1. Open WhatsApp settings on your phone.<br>
+                    2. Go to <strong>Linked Devices</strong> &gt; <strong>Link a Device</strong>.<br>
+                    3. Select <strong>Link with phone number instead</strong>.<br>
+                    4. Enter the code above.
+                </p>
+                <div class="status-indicator current-status">
+                    <div class="pulse"></div>
+                    <span id="statusText">Waiting for login...</span>
+                </div>
+            </div>
+
+            <!-- Session ID Display Area -->
+            <div id="sessionResultArea" class="hidden success-box">
+                <div class="success-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </div>
+                <h3>Authentication Successful!</h3>
+                <p>Here is your Session ID:</p>
+                <div class="code-box session-box">
+                    <input type="text" id="sessionIdDisplay" readonly>
+                    <button id="copySessionBtn" class="btn-icon" title="Copy Session ID">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                    </button>
+                </div>
+                <p class="notice">Keep this ID hidden and secure! Do not share it with anyone.</p>
+                <button id="restartBtn" class="btn-secondary">Generate Another</button>
+            </div>
+            
+            <div id="errorArea" class="hidden error-box"></div>
+        </main>
+
+        <footer>
+            <p>Made with ❤️ by XENO HEX</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
