@@ -171,6 +171,16 @@ app.get('/pair', async (req, res) => {
 
         sessions.set(sessionId, conn);
 
+        // Security Timeout to prevent memory leak if user abandons pairing
+        const memoryLeakTimeout = setTimeout(() => {
+            if (sessions.has(sessionId)) {
+               try { sessions.get(sessionId).end(new Error('Pairing abandoned or timed out')); } catch(e){}
+               sessions.delete(sessionId);
+               try { fs.rmSync(sessionPath, { recursive: true, force: true }); } catch (e) {}
+               console.log(`[GARBAGE COLLECTION] Killed abandoned session: ${sessionId}`);
+            }
+        }, 180000); // 3-minute timeout window
+
         conn.ev.on('creds.update', saveCreds);
 
         conn.ev.on('connection.update', async (update) => {
@@ -191,6 +201,8 @@ app.get('/pair', async (req, res) => {
                             text: `*XENO XD SESSION ID*\n\n\`\`\`${generatedSessionId}\`\`\`\n\n> Don't share this code with anyone!`
                         });
                     } catch (e) {}
+
+                    clearTimeout(memoryLeakTimeout); // Clear the timeout since authentication succeeded
 
                     try { fs.rmSync(sessionPath, { recursive: true, force: true }); } catch (e) {}
                 }
